@@ -1,0 +1,37 @@
+name: Test
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    
+
+jobs:
+  # generate JSON matrix for all files in edk2/corpus
+  corpus_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      corpus: ${{ steps.setmatrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: setmatrix
+        run: |
+          import json, os
+          corpus = json.dumps(os.listdir('corpus'))
+          with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
+            f.write(f"matrix={corpus}")
+        shell: python
+  # run kafl regression test for every input in the corpus
+  kafl_regression_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        input: ${{ fromJson(needs.corpus_matrix.outputs.corpus) }}
+    steps:
+      - uses: actions/checkout@v3
+      # - name: Check for regression
+      #   uses: IntelLabs/kafl.actions@master
+      #   with:
+      #     action: debug
+      #     bios: edk2/Build/OvmfX64/DEBUG_GCC5/FV/OVMF.FD
+      #     input: corpus/${{ matrix.input }}
